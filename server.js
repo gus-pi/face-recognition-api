@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcrypt';
 
 const app = express();
 
@@ -41,13 +42,18 @@ app.post('/signin', (req, res) => {
   }
 });
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
+
+  //hash password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
   database.users.push({
     id: '125',
     name: name,
     email: email,
-    password: password,
+    password: hashedPassword,
     entries: 0,
     joined: new Date(),
   });
