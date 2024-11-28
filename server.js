@@ -42,7 +42,10 @@ const database = {
 };
 
 app.get('/', (req, res) => {
-  res.send(database.users);
+  db.select('*')
+    .from('users')
+    .then((users) => res.json(users))
+    .catch((err) => console.log(err));
 });
 
 app.post('/signin', (req, res) => {
@@ -78,15 +81,22 @@ app.post('/register', async (req, res) => {
 app.get('/profile/:id', (req, res) => {
   const { id } = req.params;
   let found = false;
-  database.users.forEach((user) => {
-    if (user.id === id) {
-      found = true;
-      return res.json(user);
-    }
-  });
-  if (!found) {
-    res.status(404).json('User not found.');
-  }
+  db.select('*')
+    .from('users')
+    .where({
+      id: id,
+    })
+    .then((user) => {
+      if (user.length) {
+        res.json(user[0]);
+      } else {
+        res.status(404).json('User not found.');
+      }
+    })
+    .catch((err) => console.log(err));
+  // if (!found) {
+  //   res.status(404).json('User not found.');
+  // }
 });
 
 app.put('/image', (req, res) => {
