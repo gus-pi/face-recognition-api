@@ -49,14 +49,26 @@ app.get('/', (req, res) => {
 });
 
 app.post('/signin', (req, res) => {
-  if (
-    req.body.email === database.users[0].email &&
-    req.body.password === database.users[0].password
-  ) {
-    res.json(database.users[0]);
-  } else {
-    res.status(400).json('wrong email or password');
-  }
+  db.select('email', 'hash')
+    .from('login')
+    .where({
+      email: req.body.email,
+    })
+    .then(async (data) => {
+      const isValid = await bcrypt.compare(req.body.password, data[0].hash);
+      if (isValid) {
+        db.select('*')
+          .from('users')
+          .where({
+            email: req.body.email,
+          })
+          .then((user) => res.json(user[0]))
+          .catch((err) => res.status(400).json('Unable to get user'));
+      } else {
+        res.status(400).json('Wrong credentials');
+      }
+    })
+    .catch((err) => res.status(400).json('Wrong credentials'));
 });
 
 app.post('/register', async (req, res) => {
