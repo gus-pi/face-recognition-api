@@ -1,6 +1,18 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import cors from 'cors';
+import knex from 'knex';
+
+const db = knex({
+  client: 'pg',
+  connection: {
+    host: '127.0.0.1',
+    port: 5432,
+    user: 'postgres',
+    password: 'admin',
+    database: 'smart-brain',
+  },
+});
 
 const app = express();
 
@@ -50,20 +62,17 @@ app.post('/register', async (req, res) => {
   //hash password
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
-
-  database.users.push({
-    id: '125',
-    name: name,
-    email: email,
-    password: hashedPassword,
-    entries: 0,
-    joined: new Date(),
-  });
-  res.json(database.users[database.users.length - 1]);
-});
-
-app.listen(3001, () => {
-  console.log('App is running on port 3001');
+  db('users')
+    .returning('*')
+    .insert({
+      name: name,
+      email: email,
+      joined: new Date(),
+    })
+    .then((user) => {
+      res.json(user[0]);
+    })
+    .catch((err) => res.status(400).json('Unable to register'));
 });
 
 app.get('/profile/:id', (req, res) => {
@@ -122,4 +131,8 @@ app.post('/clarifai', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Unable to fetch from Clarifai API' });
   }
+});
+
+app.listen(3001, () => {
+  console.log('App is running on port 3001');
 });
