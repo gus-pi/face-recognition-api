@@ -10,11 +10,11 @@ import { handleClarifai, handleImage } from './controllers/image.js';
 const db = knex({
   client: 'pg',
   connection: {
-    host: '127.0.0.1',
+    host: 'https://ztm-face-recognition.onrender.com',
     port: 5432,
-    user: 'postgres',
-    password: 'admin',
-    database: 'smart-brain',
+    user: 'face_db_aa2k_user',
+    password: 'gy8Pa9mzwEbLkSC70aXASBLGb1pZTswE',
+    database: 'face_db_aa2k',
   },
 });
 
@@ -51,6 +51,6 @@ app.post('/image', (req, res) => {
   handleClarifai(req, res);
 });
 
-app.listen(3001, () => {
+app.listen('https://ztm-face-recognition.onrender.com', () => {
   console.log('App is running on port 3001');
 });
