@@ -5,7 +5,7 @@ import knex from 'knex';
 import { handleRegister } from './controllers/register.js';
 import { handleSignIn } from './controllers/signin.js';
 import { handleGetProfile } from './controllers/profile.js';
-import { handleImage } from './controllers/image.js';
+import { handleClarifai, handleImage } from './controllers/image.js';
 
 const db = knex({
   client: 'pg',
@@ -47,33 +47,8 @@ app.put('/image', (req, res) => {
   handleImage(req, res, db);
 });
 
-const CLARIFAI_API_URL =
-  'https://api.clarifai.com/v2/models/face-detection/outputs';
-const PAT = '5c99ecce9bc84da98b455273e6bf1358';
-
-app.post('/clarifai', async (req, res) => {
-  const { imageUrl } = req.body;
-  const raw = JSON.stringify({
-    user_app_id: { user_id: 'ci84gqtwtwmy', app_id: 'test' },
-    inputs: [{ data: { image: { url: imageUrl } } }],
-  });
-
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Key ${PAT}`,
-    },
-    body: raw,
-  };
-
-  try {
-    const response = await fetch(CLARIFAI_API_URL, requestOptions);
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: 'Unable to fetch from Clarifai API' });
-  }
+app.post('/image', (req, res) => {
+  handleClarifai(req, res);
 });
 
 app.listen(3001, () => {
