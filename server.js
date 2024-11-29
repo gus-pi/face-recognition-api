@@ -2,6 +2,10 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import cors from 'cors';
 import knex from 'knex';
+import { handleRegister } from './controllers/register.js';
+import { handleSignIn } from './controllers/signin.js';
+import { handleGetProfile } from './controllers/profile.js';
+import { handleImage } from './controllers/image.js';
 
 const db = knex({
   client: 'pg',
@@ -20,27 +24,6 @@ app.use(express.json());
 //app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 
-const database = {
-  users: [
-    {
-      id: '123',
-      name: 'John',
-      email: 'john@gmail.com',
-      password: 'cookies',
-      entries: 0,
-      joined: new Date(),
-    },
-    {
-      id: '124',
-      name: 'Sally',
-      email: 'sally@gmail.com',
-      password: 'bananas',
-      entries: 0,
-      joined: new Date(),
-    },
-  ],
-};
-
 app.get('/', (req, res) => {
   db.select('*')
     .from('users')
@@ -49,93 +32,19 @@ app.get('/', (req, res) => {
 });
 
 app.post('/signin', (req, res) => {
-  db.select('email', 'hash')
-    .from('login')
-    .where({
-      email: req.body.email,
-    })
-    .then(async (data) => {
-      const isValid = await bcrypt.compare(req.body.password, data[0].hash);
-      if (isValid) {
-        db.select('*')
-          .from('users')
-          .where({
-            email: req.body.email,
-          })
-          .then((user) => res.json(user[0]))
-          .catch((err) => res.status(400).json('Unable to get user'));
-      } else {
-        res.status(400).json('Wrong credentials');
-      }
-    })
-    .catch((err) => res.status(400).json('Wrong credentials'));
+  handleSignIn(req, res, db, bcrypt);
 });
 
-app.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
-
-  //hash password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  db.transaction((trx) => {
-    trx
-      .insert({
-        hash: hashedPassword,
-        email: email,
-      })
-      .into('login')
-      .returning('email')
-      .then((loginEmail) => {
-        trx('users')
-          .returning('*')
-          .insert({
-            name: name,
-            email: loginEmail[0].email,
-            joined: new Date(),
-          })
-          .then((user) => {
-            res.json(user[0]);
-          });
-      })
-      .then(trx.commit)
-      .catch(trx.rollback);
-  }).catch((err) => res.status(400).json('Unable to register'));
+app.post('/register', (req, res) => {
+  handleRegister(req, res, db, bcrypt);
 });
 
 app.get('/profile/:id', (req, res) => {
-  const { id } = req.params;
-  let found = false;
-  db('users')
-    .select('*')
-    .from('users')
-    .where({
-      id: id,
-    })
-    .then((user) => {
-      if (user.length) {
-        res.json(user[0]);
-      } else {
-        res.status(404).json('User not found.');
-      }
-    })
-    .catch((err) => console.log(err));
-  // if (!found) {
-  //   res.status(404).json('User not found.');
-  // }
+  handleGetProfile(req, res, db);
 });
 
 app.put('/image', (req, res) => {
-  const { id } = req.body;
-  db('users')
-    .where({
-      id: id,
-    })
-    .increment('entries', 1)
-    .returning('entries')
-    .then((entries) => {
-      res.json(entries[0].entries);
-    })
-    .catch((err) => res.status(400).json('Error getting entries'));
+  handleImage(req, res, db);
 });
 
 const CLARIFAI_API_URL =
